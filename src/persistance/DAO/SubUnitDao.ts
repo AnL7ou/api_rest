@@ -1,4 +1,4 @@
-import { SubUnit } from "../Classes/SubUnit.js";
+import { SubUnit } from "../Entity/SubUnit.js";
 
 export interface SubUnitDao {
     insert(subUnit: SubUnit): void;

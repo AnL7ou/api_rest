@@ -2,7 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import type { JwtPayload as JwtPayloadBase } from 'jsonwebtoken';
 import { config } from '../config.js';
-import { UserRole } from '../Classes/User.js';
+import { UserRole } from '../persistance/Entity/User.js';
 
 // Étendre le type Request pour inclure les informations utilisateur
 declare global {

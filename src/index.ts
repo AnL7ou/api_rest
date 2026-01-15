@@ -1,12 +1,12 @@
 import express from 'express';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
-import { MemberDbDao } from './DbDAO/MemberDbDao.js';
-import { PetDbDao } from './DbDAO/PetDbDao.js';
-import { Member } from './Classes/Member.js';
-import { Pet } from './Classes/Pet.js';
-import { createMemberRouter } from './routes/membersRoutes.js';
-import { createPetRouter } from './routes/petsRoutes.js';
+import { MemberDbDao } from './persistance/DbDAO/MemberDbDao.js';
+import { PetDbDao } from './persistance/DbDAO/PetDbDao.js';
+import { Member } from './persistance/Entity/Member.js';
+import { Pet } from './persistance/Entity/Pet.js';
+import { createMemberRouter } from './http/routes/members.js';
+import { createPetRouter } from './http/routes/pets.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -27,7 +27,7 @@ const db = await open({
 
 (async () => {
     const db = await open({
-        filename: './db/SkzPets.db',
+        filename: './db/skz.db',
         driver: sqlite3.Database
     });
 

@@ -1,4 +1,4 @@
-import { Position } from "../Classes/Position.js";
+import { Position } from "../Entity/Position.js";
 
 export interface PositionDao {
     insert(position: Position): void;

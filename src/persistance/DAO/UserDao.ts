@@ -1,4 +1,4 @@
-import { User } from "../Classes/User.js";
+import { User } from "../Entity/User.js";
 
 export interface UserDao {
     insert(user: User): void;

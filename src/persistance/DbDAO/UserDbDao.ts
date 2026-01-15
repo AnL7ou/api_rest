@@ -1,5 +1,5 @@
 import type { UserDao } from '../DAO/UserDao.js';
-import { User } from "../Classes/User.js";
+import { User } from "../Entity/User.js";
 
 export class UserDbDao implements UserDao {
     private __db: any;

@@ -1,6 +1,6 @@
 import express from 'express';
-import type { MemberDbDao } from '../DbDAO/MemberDbDao.js';
-import { Member } from '../Classes/Member.js';
+import type { MemberDbDao } from '../../persistance/DbDAO/MemberDbDao.js';
+import { Member } from '../Entity/Member.js';
 
 export function createMemberRouter(memberDbDao: MemberDbDao) {
 

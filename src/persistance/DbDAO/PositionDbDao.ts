@@ -1,5 +1,5 @@
 import type { PositionDao } from '../DAO/PositionDao.js';
-import { Position } from "../Classes/Position.js";
+import { Position } from "../Entity/Position.js";
 
 export class PositionDbDao implements PositionDao {
     private __db: any;

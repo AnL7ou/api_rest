@@ -1,4 +1,4 @@
-import {Member} from "../Classes/Member.js"
+import {Member} from "../Entity/Member.js"
 
 export interface MemberDao {
     insert(member : Member) : void

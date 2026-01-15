@@ -1,5 +1,5 @@
-import { Pet } from "../Classes/Pet.js"
-import { Member } from "../Classes/Member.js"
+import { Pet } from "../Entity/Pet.js"
+import { Member } from "../Entity/Member.js"
 
 export interface PetDao {
     insert(pet : Pet) : void

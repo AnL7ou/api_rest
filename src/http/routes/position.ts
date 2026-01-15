@@ -1,9 +1,9 @@
 import express from 'express';
 import type { Request, Response } from 'express';
-import { PositionDbDao } from '../DbDAO/PositionDbDao.js';
-import { Position } from '../Classes/Position.js';
-import { authenticateToken, authorizeRoles } from '../Middleware/AuthMiddleware.js';
-import { UserRole } from '../Classes/User.js';
+import { PositionDbDao } from '../../persistance/DbDAO/PositionDbDao.js';
+import { Position } from '../Entity/Position.js';
+import { authenticateToken, authorizeRoles } from '../../middleware/AuthMiddleware.js';
+import { UserRole } from '../Entity/User.js';
 
 export function createPositionRouter(positionDbDao: PositionDbDao) {
     const router = express.Router();

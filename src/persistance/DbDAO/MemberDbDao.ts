@@ -1,5 +1,5 @@
 import type { MemberDao } from '../DAO/MemberDao.js';
-import { Member } from "../Classes/Member.js";
+import { Member } from "../Entity/Member.js";
 
 export class MemberDbDao implements MemberDao {
     private __db : any;

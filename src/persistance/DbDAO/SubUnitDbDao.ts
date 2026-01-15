@@ -1,5 +1,5 @@
 import type { SubUnitDao } from '../DAO/SubUnitDao.js';
-import { SubUnit } from "../Classes/SubUnit.js";
+import { SubUnit } from "../Entity/SubUnit.js";
 
 export class SubUnitDbDao implements SubUnitDao {
     private __db: any;

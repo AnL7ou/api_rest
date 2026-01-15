@@ -1,9 +1,9 @@
 import express from 'express';
 import type { Request, Response } from 'express';
-import { SubUnitDbDao } from '../DbDAO/SubUnitDbDao.js';
-import { SubUnit } from '../Classes/SubUnit.js';
-import { authenticateToken, authorizeRoles } from '../Middleware/AuthMiddleware.js';
-import { UserRole } from '../Classes/User.js';
+import { SubUnitDbDao } from '../../persistance/DbDAO/SubUnitDbDao.js';
+import { SubUnit } from '../Entity/SubUnit.js';
+import { authenticateToken, authorizeRoles } from '../../middleware/AuthMiddleware.js';
+import { UserRole } from '../Entity/User.js';
 
 export function createSubUnitRouter(subUnitDbDao: SubUnitDbDao) {
     const router = express.Router();

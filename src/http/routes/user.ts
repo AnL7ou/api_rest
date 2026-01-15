@@ -1,14 +1,14 @@
 import express from 'express';
 import type { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
-import { UserDbDao } from '../DbDAO/UserDbDao.js';
-import { User, UserRole } from '../Classes/User.js';
+import { UserDbDao } from '../../persistance/DbDAO/UserDbDao.js';
+import { User, UserRole } from '../Entity/User.js';
 import { 
     authenticateToken, 
     authorizeRoles, 
     authorizeOwnerOrAdmin 
-} from '../Middleware/AuthMiddleware.js';
-import { config } from '../config.js';
+} from '../../middleware/AuthMiddleware.js';
+import { config } from '../../config.js';
 
 export function createUserRouter(UserDbDao: UserDbDao) {
     const router = express.Router();

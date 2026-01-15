@@ -1,6 +1,6 @@
 import express from 'express';
-import type { PetDbDao } from '../DbDAO/PetDbDao.js';
-import { Pet } from '../Classes/Pet.js';
+import type { PetDbDao } from '../../persistance/DbDAO/PetDbDao.js';
+import { Pet } from '../Entity/Pet.js';
 
 export function createPetRouter(petDbDao: PetDbDao){
     const router = express.Router();

@@ -11,7 +11,7 @@ export const config = {
 
     // Database Configuration
     database: {
-        filename: './db/SkzPets.db'
+        filename: './db/skz.db'
     },
 
     // Server Configuration

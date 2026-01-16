@@ -1,16 +1,16 @@
 import express from "express";
-import type { UserDao } from "../../persistance/DAO/UserDao.js";
+import type { UserRepository } from "../../persistance/Repository/UserRepository.js";
 import { authenticateToken } from "../../middleware/auth.js";
 import { AuthController } from "../Controller/AuthController.js";
 
-export function createAuthRouter(userDao: UserDao) {
+export function createAuthRouter(users: UserRepository) {
   const router = express.Router();
-  const controller = new AuthController(userDao);
+  const controller = new AuthController(users);
 
-  router.post("/auth/register", controller.register);
-  router.post("/auth/login", controller.login);
-  router.post("/auth/refresh", controller.refresh);
-  router.get("/auth/me", authenticateToken, controller.me);
+  router.post("/register", controller.register);
+  router.post("/login", controller.login);
+  router.post("/refresh", controller.refresh);
+  router.get("/me", authenticateToken, controller.me);
 
   return router;
 }

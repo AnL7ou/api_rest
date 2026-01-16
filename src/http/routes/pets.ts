@@ -1,13 +1,12 @@
 import express from "express";
-import type { PetDao } from "../../persistance/DAO/PetDao.js";
+import type { PetRepository } from "../../persistance/Repository/PetRepository.js";
 import { PetController } from "../Controller/PetController.js";
 
-export function createPetRouter(petDao: PetDao) {
+export function createPetRouter(petRepository: PetRepository) {
   const router = express.Router();
-  const controller = new PetController(petDao);
+  const controller = new PetController(petRepository);
 
   router.get("/pets", controller.findAll);
-  router.get("/pets/:id", controller.findById);
   router.get("/pets/owner/:ownerId", controller.findByOwner);
   router.post("/pets", controller.insert);
   router.put("/pets/:id", controller.update);

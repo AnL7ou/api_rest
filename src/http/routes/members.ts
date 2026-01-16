@@ -1,10 +1,10 @@
 import express from 'express';
-import type { MemberDao } from '../../persistance/DAO/MemberDao.js';
+import type { MemberRepository } from '../../persistance/Repository/MemberRepository.js';
 import { MemberController } from '../Controller/MemberController.js';
 
 
-export function createMemberRouter(memberDao: MemberDao) {
-    const memberController = new MemberController(memberDao);
+export function createMemberRouter(memberRepository: MemberRepository) {
+    const memberController = new MemberController(memberRepository);
 
     const router = express.Router();
 

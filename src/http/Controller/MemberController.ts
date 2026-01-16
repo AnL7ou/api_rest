@@ -1,88 +1,104 @@
 import type { Request, Response } from "express";
-import type { MemberDao } from "../../persistance/DAO/MemberDao.js";
-import { Member } from "../../persistance/Entity/Member.js";
+import type { MemberRepository } from "../../persistance/Repository/MemberRepository.js";
+import { Member } from "../../persistance/Entity/Member.js"
 
-export class MemberController {
-  constructor(private memberDao: MemberDao) {}
-
-  public findAll = async (_req: Request, res: Response) => {
-    try {
-      const members = await this.memberDao.findAll();
-      res.json(members);
-    } catch (error) {
-      res.status(500).json({ error: "Unable to retrieve members" });
+export class MemberController
+{
+    constructor(public memberRepository: MemberRepository)
+    {
     }
-  };
 
-  public findById = async (req: Request, res: Response) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid member ID" });
-
-      const member = await this.memberDao.findById(id);
-      if (!member) return res.status(404).json({ message: "Member not found" });
-      res.json(member);
-    } catch {
-      res.status(500).json({ error: "Unable to retrieve member" });
+    public findAll = async (_req: Request, res: Response) => {
+        try {
+            const members = await this.memberRepository.findAll();
+            res.json(members);
+        } catch (error) {
+            res.status(500).json({ error: 'Unable to retrieve members' });
+        }
     }
-  };
 
-  public insert = async (req: Request, res: Response) => {
-    try {
-      const { id, stageName, firstName, lastName, birthday, skzoo } = req.body;
+    public findById = async (req: Request, res: Response) => {
+        try {
+            const id = Number(req.params.id);
+            if (Number.isNaN(id)) {
+                return res.status(400).json({ error: 'Invalid member ID' });
+            }
 
-      // If you allow client-specified IDs, use it. Otherwise generate externally.
-      const codeMember = id ?? undefined;
-      if (codeMember === undefined) {
-        // Minimal strategy: MAX+1
-        const all = await this.memberDao.findAll();
-        const newId = all.length ? Math.max(...all.map((m) => m.codeMember)) + 1 : 1;
-        const member = new Member(newId, stageName, firstName, lastName, birthday, skzoo);
-        const ok = await this.memberDao.insert(member);
-        if (!ok) return res.status(500).json({ error: "Failed to create member" });
-        return res.status(201).json({ message: "Member created successfully", member });
-      }
-
-      const member = new Member(codeMember, stageName, firstName, lastName, birthday, skzoo);
-      const ok = await this.memberDao.insert(member);
-      if (!ok) return res.status(500).json({ error: "Failed to create member" });
-
-      res.status(201).json({ message: "Member created successfully", member });
-    } catch (error) {
-      res.status(500).json({ error: "Unable to create member" });
+            const member = await this.memberRepository.findById(id);
+            if (member) {
+                res.json(member);
+            } else {
+                res.status(404).json({ message: 'Member not found' });
+            }
+        } catch (error) {
+            res.status(500).json({ error: 'Unable to retrieve member' });
+        }
     }
-  };
 
-  public update = async (req: Request, res: Response) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid member ID" });
+    public insert = async (req: Request, res: Response) => {
+        try {
+            const { stageName, firstName, lastName, birthday, skzoo } = req.body;
 
-      const existing = await this.memberDao.findById(id);
-      if (!existing) return res.status(404).json({ message: "Member not found" });
+            const newMember = new Member(undefined as any, stageName, firstName, lastName, birthday, skzoo);
 
-      const { stageName, firstName, lastName, birthday, skzoo } = req.body;
-      const updated = new Member(id, stageName, firstName, lastName, birthday, skzoo);
+            const success = await this.memberRepository.insert(newMember);
+            if (success) {
+                return res.status(201).json({ message: "Member created successfully", member: newMember });
+            }
 
-      const ok = await this.memberDao.update(updated);
-      if (!ok) return res.status(500).json({ error: "Failed to update member" });
-
-      res.json({ message: "Member updated successfully", member: updated });
-    } catch {
-      res.status(500).json({ error: "Unable to update member" });
+            return res.status(500).json({ error: "Failed to create member" });
+        } catch (error) {
+            console.error("Error creating member:", error);
+            return res.status(500).json({ error: "Unable to create member" });
+        }
     }
-  };
 
-  public delete = async (req: Request, res: Response) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid member ID" });
+    public update = async (req: Request, res: Response) => {
+        try {
+            const id = Number(req.params.id);
+            if (Number.isNaN(id)) {
+                return res.status(400).json({ error: "Invalid member ID" });
+            }
 
-      const ok = await this.memberDao.delete(id);
-      if (!ok) return res.status(404).json({ message: "Member not found" });
-      res.json({ message: "Member deleted successfully" });
-    } catch {
-      res.status(500).json({ error: "Unable to delete member" });
+            const existingMember = await this.memberRepository.findById(id);
+            if (!existingMember) {
+                return res.status(404).json({ message: "Member not found" });
+            }
+
+            const { stageName, firstName, lastName, birthday, skzoo } = req.body;
+
+            const updatedMember = new Member(id, stageName, firstName, lastName, birthday, skzoo);
+
+            const success = await this.memberRepository.update(updatedMember);
+            if (success) {
+                return res.json({ message: "Member updated successfully", member: updatedMember });
+            }
+
+            return res.status(500).json({ error: "Failed to update member" });
+        } catch (error) {
+            console.error("Error updating member:", error);
+            return res.status(500).json({ error: "Unable to update member" });
+        }
     }
-  };
+
+    public delete = async (req: Request, res: Response) => {
+        try {
+            const id = Number(req.params.id);
+
+            if (isNaN(id)) {
+                return res.status(400).json({ error: 'Invalid member ID' });
+            }
+
+            const deleted = await this.memberRepository.delete(id);
+
+            if (deleted) {
+                res.json({ message: 'Member deleted successfully' });
+            } else {
+                res.status(404).json({ message: 'Member not found' });
+            }
+        } catch (error) {
+            console.error('Error deleting member:', error);
+            res.status(500).json({ error: '[MemberController.delete] Unable to delete member' });
+        }
+    }
 }

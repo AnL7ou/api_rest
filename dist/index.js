@@ -37,6 +37,16 @@ async function initDb() {
     );
   `);
   await db.exec(`
+    CREATE TABLE IF NOT EXISTS User (
+      id INTEGER PRIMARY KEY NOT NULL,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      role TEXT NOT NULL,
+      createdAt TEXT NOT NULL
+    );
+  `);
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS Position (
       codePosition INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL
@@ -49,22 +59,12 @@ async function initDb() {
     );
   `);
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS User (
-      id INTEGER PRIMARY KEY NOT NULL,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      role TEXT NOT NULL,
-      createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
-  await db.exec(`
     CREATE TABLE IF NOT EXISTS Member_Position (
       memberId INTEGER NOT NULL,
       positionId INTEGER NOT NULL,
       PRIMARY KEY (memberId, positionId),
-      FOREIGN KEY (memberId) REFERENCES Member(codeMember) ON DELETE CASCADE,
-      FOREIGN KEY (positionId) REFERENCES Position(codePosition) ON DELETE CASCADE
+      FOREIGN KEY (memberId) REFERENCES Member(codeMember),
+      FOREIGN KEY (positionId) REFERENCES Position(codePosition)
     );
   `);
   await db.exec(`
@@ -72,8 +72,8 @@ async function initDb() {
       memberId INTEGER NOT NULL,
       subUnitId INTEGER NOT NULL,
       PRIMARY KEY (memberId, subUnitId),
-      FOREIGN KEY (memberId) REFERENCES Member(codeMember) ON DELETE CASCADE,
-      FOREIGN KEY (subUnitId) REFERENCES SubUnit(codeSubUnit) ON DELETE CASCADE
+      FOREIGN KEY (memberId) REFERENCES Member(codeMember),
+      FOREIGN KEY (subUnitId) REFERENCES SubUnit(codeSubUnit)
     );
   `);
   await db.exec(`
@@ -106,8 +106,8 @@ async function initDb() {
   await db.exec(`
     INSERT OR IGNORE INTO SubUnit (codeSubUnit, name) VALUES
       (1, '3RACHA'),
-      (2, 'Danceracha'),
-      (3, 'Vocalracha');
+      (2, 'DanceRACHA'),
+      (3, 'VocalRACHA');
   `);
   return db;
 }
@@ -310,122 +310,6 @@ var SqlitePetDao = class {
   }
 };
 
-// src/persistance/Entity/Position.ts
-var Position = class {
-  _codePosition;
-  _name;
-  constructor(_codePosition, _name) {
-    this._codePosition = _codePosition;
-    this._name = _name;
-  }
-  get codePosition() {
-    return this._codePosition;
-  }
-  set codePosition(_codePosition) {
-    this._codePosition = _codePosition;
-  }
-  get name() {
-    return this._name;
-  }
-  set name(_name) {
-    this._name = _name;
-  }
-};
-
-// src/persistance/DAO/Sqlite/SqlitePositionDao.ts
-var SqlitePositionDao = class {
-  constructor(db) {
-    this.db = db;
-  }
-  async insert(position) {
-    const r = await this.db.run(
-      `INSERT OR IGNORE INTO Position (codePosition, name) VALUES (?, ?);`,
-      position.codePosition,
-      position.name
-    );
-    return (r.changes ?? 0) > 0;
-  }
-  async update(position) {
-    const r = await this.db.run(
-      `UPDATE Position SET name = ? WHERE codePosition = ?;`,
-      position.name,
-      position.codePosition
-    );
-    return (r.changes ?? 0) > 0;
-  }
-  async delete(id) {
-    const r = await this.db.run(`DELETE FROM Position WHERE codePosition = ?;`, id);
-    return (r.changes ?? 0) > 0;
-  }
-  async findAll() {
-    const rows = await this.db.all(`SELECT * FROM Position;`);
-    return rows.map((r) => new Position(r.codePosition, r.name));
-  }
-  async findById(id) {
-    const r = await this.db.get(`SELECT * FROM Position WHERE codePosition = ?;`, id);
-    if (!r) return null;
-    return new Position(r.codePosition, r.name);
-  }
-};
-
-// src/persistance/Entity/SubUnit.ts
-var SubUnit = class {
-  _codeSubUnit;
-  _name;
-  constructor(_codeSubUnit, _name) {
-    this._codeSubUnit = _codeSubUnit;
-    this._name = _name;
-  }
-  get codeSubUnit() {
-    return this._codeSubUnit;
-  }
-  set codeSubUnit(_codeSubUnit) {
-    this._codeSubUnit = _codeSubUnit;
-  }
-  get name() {
-    return this._name;
-  }
-  set name(_name) {
-    this._name = _name;
-  }
-};
-
-// src/persistance/DAO/Sqlite/SqliteSubUnitDao.ts
-var SqliteSubUnitDao = class {
-  constructor(db) {
-    this.db = db;
-  }
-  async insert(subUnit) {
-    const r = await this.db.run(
-      `INSERT OR IGNORE INTO SubUnit (codeSubUnit, name) VALUES (?, ?);`,
-      subUnit.codeSubUnit,
-      subUnit.name
-    );
-    return (r.changes ?? 0) > 0;
-  }
-  async update(subUnit) {
-    const r = await this.db.run(
-      `UPDATE SubUnit SET name = ? WHERE codeSubUnit = ?;`,
-      subUnit.name,
-      subUnit.codeSubUnit
-    );
-    return (r.changes ?? 0) > 0;
-  }
-  async delete(id) {
-    const r = await this.db.run(`DELETE FROM SubUnit WHERE codeSubUnit = ?;`, id);
-    return (r.changes ?? 0) > 0;
-  }
-  async findAll() {
-    const rows = await this.db.all(`SELECT * FROM SubUnit;`);
-    return rows.map((r) => new SubUnit(r.codeSubUnit, r.name));
-  }
-  async findById(id) {
-    const r = await this.db.get(`SELECT * FROM SubUnit WHERE codeSubUnit = ?;`, id);
-    if (!r) return null;
-    return new SubUnit(r.codeSubUnit, r.name);
-  }
-};
-
 // src/persistance/Entity/User.ts
 var UserRole = /* @__PURE__ */ ((UserRole2) => {
   UserRole2["ADMIN"] = "admin";
@@ -551,81 +435,276 @@ var SqliteUserDao = class {
   }
 };
 
-// src/persistance/DAO/Sqlite/SqliteMemberPositionDao.ts
-var SqliteMemberPositionDao = class {
-  constructor(db) {
-    this.db = db;
+// src/persistance/Entity/Position.ts
+var Position = class {
+  _codePosition;
+  _name;
+  constructor(_codePosition, _name) {
+    this._codePosition = _codePosition;
+    this._name = _name;
   }
-  async add(memberId, positionId) {
-    const r = await this.db.run(
-      `INSERT OR IGNORE INTO Member_Position (memberId, positionId) VALUES (?, ?);`,
-      memberId,
-      positionId
-    );
-    return (r.changes ?? 0) > 0;
+  get codePosition() {
+    return this._codePosition;
   }
-  async remove(memberId, positionId) {
-    const r = await this.db.run(
-      `DELETE FROM Member_Position WHERE memberId = ? AND positionId = ?;`,
-      memberId,
-      positionId
-    );
-    return (r.changes ?? 0) > 0;
+  set codePosition(_codePosition) {
+    this._codePosition = _codePosition;
   }
-  async findPositionsByMember(memberId) {
-    const rows = await this.db.all(
-      `SELECT p.* FROM Position p
-       INNER JOIN Member_Position mp ON mp.positionId = p.codePosition
-       WHERE mp.memberId = ?;`,
-      memberId
-    );
-    return rows.map((r) => new Position(r.codePosition, r.name));
+  get name() {
+    return this._name;
   }
-  async findMembersByPosition(positionId) {
-    const rows = await this.db.all(
-      `SELECT memberId FROM Member_Position WHERE positionId = ?;`,
-      positionId
-    );
-    return rows.map((r) => r.memberId);
+  set name(_name) {
+    this._name = _name;
   }
 };
 
-// src/persistance/DAO/Sqlite/SqliteMemberSubUnitDao.ts
-var SqliteMemberSubUnitDao = class {
+// src/persistance/DAO/Sqlite/SqlitePositionDao.ts
+var SqlitePositionDao = class {
   constructor(db) {
     this.db = db;
   }
-  async add(memberId, subUnitId) {
+  async insert(position) {
     const r = await this.db.run(
-      `INSERT OR IGNORE INTO Member_SubUnit (memberId, subUnitId) VALUES (?, ?);`,
-      memberId,
-      subUnitId
+      `INSERT OR IGNORE INTO Position (codePosition, name) VALUES (?, ?);`,
+      position.codePosition,
+      position.name
     );
     return (r.changes ?? 0) > 0;
   }
-  async remove(memberId, subUnitId) {
+  async update(position) {
     const r = await this.db.run(
-      `DELETE FROM Member_SubUnit WHERE memberId = ? AND subUnitId = ?;`,
-      memberId,
-      subUnitId
+      `UPDATE Position SET name = ? WHERE codePosition = ?;`,
+      position.name,
+      position.codePosition
     );
     return (r.changes ?? 0) > 0;
   }
-  async findSubUnitsByMember(memberId) {
-    const rows = await this.db.all(
-      `SELECT s.* FROM SubUnit s
-       INNER JOIN Member_SubUnit ms ON ms.subUnitId = s.codeSubUnit
-       WHERE ms.memberId = ?;`,
-      memberId
+  async delete(id) {
+    const r = await this.db.run(`DELETE FROM Position WHERE codePosition = ?;`, id);
+    return (r.changes ?? 0) > 0;
+  }
+  async findAll() {
+    const rows = await this.db.all(`SELECT * FROM Position;`);
+    return rows.map((r) => new Position(r.codePosition, r.name));
+  }
+  async findById(id) {
+    const r = await this.db.get(`SELECT * FROM Position WHERE codePosition = ?;`, id);
+    if (!r) return null;
+    return new Position(r.codePosition, r.name);
+  }
+};
+
+// src/persistance/Entity/SubUnit.ts
+var SubUnit = class {
+  _codeSubUnit;
+  _name;
+  constructor(_codeSubUnit, _name) {
+    this._codeSubUnit = _codeSubUnit;
+    this._name = _name;
+  }
+  get codeSubUnit() {
+    return this._codeSubUnit;
+  }
+  set codeSubUnit(_codeSubUnit) {
+    this._codeSubUnit = _codeSubUnit;
+  }
+  get name() {
+    return this._name;
+  }
+  set name(_name) {
+    this._name = _name;
+  }
+};
+
+// src/persistance/DAO/Sqlite/SqliteSubUnitDao.ts
+var SqliteSubUnitDao = class {
+  constructor(db) {
+    this.db = db;
+  }
+  async insert(subUnit) {
+    const r = await this.db.run(
+      `INSERT OR IGNORE INTO SubUnit (codeSubUnit, name) VALUES (?, ?);`,
+      subUnit.codeSubUnit,
+      subUnit.name
     );
+    return (r.changes ?? 0) > 0;
+  }
+  async update(subUnit) {
+    const r = await this.db.run(
+      `UPDATE SubUnit SET name = ? WHERE codeSubUnit = ?;`,
+      subUnit.name,
+      subUnit.codeSubUnit
+    );
+    return (r.changes ?? 0) > 0;
+  }
+  async delete(id) {
+    const r = await this.db.run(`DELETE FROM SubUnit WHERE codeSubUnit = ?;`, id);
+    return (r.changes ?? 0) > 0;
+  }
+  async findAll() {
+    const rows = await this.db.all(`SELECT * FROM SubUnit;`);
     return rows.map((r) => new SubUnit(r.codeSubUnit, r.name));
   }
-  async findMembersBySubUnit(subUnitId) {
-    const rows = await this.db.all(
-      `SELECT memberId FROM Member_SubUnit WHERE subUnitId = ?;`,
-      subUnitId
-    );
-    return rows.map((r) => r.memberId);
+  async findById(id) {
+    const r = await this.db.get(`SELECT * FROM SubUnit WHERE codeSubUnit = ?;`, id);
+    if (!r) return null;
+    return new SubUnit(r.codeSubUnit, r.name);
+  }
+};
+
+// src/persistance/Repository/Adapters/MemberRepositoryFromDao.ts
+var MemberRepositoryFromDao = class {
+  constructor(dao) {
+    this.dao = dao;
+  }
+  findAll() {
+    return this.dao.findAll();
+  }
+  findById(id) {
+    return this.dao.findById(id);
+  }
+  insert(member) {
+    return this.dao.insert(member);
+  }
+  update(member) {
+    return this.dao.update(member);
+  }
+  delete(id) {
+    return this.dao.delete(id);
+  }
+};
+
+// src/persistance/Repository/Adapters/PetRepositoryFromDao.ts
+var PetRepositoryFromDao = class {
+  constructor(dao) {
+    this.dao = dao;
+  }
+  findAll() {
+    return this.dao.findAll();
+  }
+  findById(id) {
+    return this.dao.findById(id);
+  }
+  findByMember(memberId) {
+    return this.dao.findByMember(memberId);
+  }
+  insert(pet) {
+    return this.dao.insert(pet);
+  }
+  update(pet) {
+    return this.dao.update(pet);
+  }
+  delete(id) {
+    return this.dao.delete(id);
+  }
+};
+
+// src/persistance/Repository/Adapters/UserRepositoryFromDao.ts
+var UserRepositoryFromDao = class {
+  constructor(dao) {
+    this.dao = dao;
+  }
+  findAll() {
+    return this.dao.findAll();
+  }
+  findById(id) {
+    return this.dao.findById(id);
+  }
+  findByUsername(username) {
+    return this.dao.findByUsername(username);
+  }
+  findByEmail(email) {
+    return this.dao.findByEmail(email);
+  }
+  insert(user) {
+    return this.dao.insert(user);
+  }
+  update(user) {
+    return this.dao.update(user);
+  }
+  delete(id) {
+    return this.dao.delete(id);
+  }
+};
+
+// src/persistance/Repository/Adapters/PositionRepositoryFromDao.ts
+var PositionRepositoryFromDao = class {
+  constructor(dao) {
+    this.dao = dao;
+  }
+  findAll() {
+    return this.dao.findAll();
+  }
+  findById(id) {
+    return this.dao.findById(id);
+  }
+  insert(position) {
+    return this.dao.insert(position);
+  }
+  update(position) {
+    return this.dao.update(position);
+  }
+  delete(id) {
+    return this.dao.delete(id);
+  }
+};
+
+// src/persistance/Repository/Adapters/SubUnitRepositoryFromDao.ts
+var SubUnitRepositoryFromDao = class {
+  constructor(dao) {
+    this.dao = dao;
+  }
+  findAll() {
+    return this.dao.findAll();
+  }
+  findById(id) {
+    return this.dao.findById(id);
+  }
+  insert(subUnit) {
+    return this.dao.insert(subUnit);
+  }
+  update(subUnit) {
+    return this.dao.update(subUnit);
+  }
+  delete(id) {
+    return this.dao.delete(id);
+  }
+};
+
+// src/persistance/Repository/Adapters/MemberPositionRepositoryFromDao.ts
+var MemberPositionRepositoryFromDao = class {
+  constructor(dao) {
+    this.dao = dao;
+  }
+  add(memberId, positionId) {
+    return this.dao.add(memberId, positionId);
+  }
+  remove(memberId, positionId) {
+    return this.dao.remove(memberId, positionId);
+  }
+  findPositionsByMember(memberId) {
+    return this.dao.findPositionsByMember(memberId);
+  }
+  findMembersByPosition(positionId) {
+    return this.dao.findMembersByPosition(positionId);
+  }
+};
+
+// src/persistance/Repository/Adapters/MemberSubUnitRepositoryFromDao.ts
+var MemberSubUnitRepositoryFromDao = class {
+  constructor(dao) {
+    this.dao = dao;
+  }
+  add(memberId, subUnitId) {
+    return this.dao.add(memberId, subUnitId);
+  }
+  remove(memberId, subUnitId) {
+    return this.dao.remove(memberId, subUnitId);
+  }
+  findSubUnitsByMember(memberId) {
+    return this.dao.findSubUnitsByMember(memberId);
+  }
+  findMembersBySubUnit(subUnitId) {
+    return this.dao.findMembersBySubUnit(subUnitId);
   }
 };
 
@@ -634,12 +713,12 @@ import express from "express";
 
 // src/http/Controller/MemberController.ts
 var MemberController = class {
-  constructor(memberDao) {
-    this.memberDao = memberDao;
+  constructor(memberRepository) {
+    this.memberRepository = memberRepository;
   }
   findAll = async (_req, res) => {
     try {
-      const members = await this.memberDao.findAll();
+      const members = await this.memberRepository.findAll();
       res.json(members);
     } catch (error) {
       res.status(500).json({ error: "Unable to retrieve members" });
@@ -648,65 +727,77 @@ var MemberController = class {
   findById = async (req, res) => {
     try {
       const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid member ID" });
-      const member = await this.memberDao.findById(id);
-      if (!member) return res.status(404).json({ message: "Member not found" });
-      res.json(member);
-    } catch {
+      if (Number.isNaN(id)) {
+        return res.status(400).json({ error: "Invalid member ID" });
+      }
+      const member = await this.memberRepository.findById(id);
+      if (member) {
+        res.json(member);
+      } else {
+        res.status(404).json({ message: "Member not found" });
+      }
+    } catch (error) {
       res.status(500).json({ error: "Unable to retrieve member" });
     }
   };
   insert = async (req, res) => {
     try {
-      const { id, stageName, firstName, lastName, birthday, skzoo } = req.body;
-      const codeMember = id ?? void 0;
-      if (codeMember === void 0) {
-        const all = await this.memberDao.findAll();
-        const newId = all.length ? Math.max(...all.map((m) => m.codeMember)) + 1 : 1;
-        const member2 = new Member(newId, stageName, firstName, lastName, birthday, skzoo);
-        const ok2 = await this.memberDao.insert(member2);
-        if (!ok2) return res.status(500).json({ error: "Failed to create member" });
-        return res.status(201).json({ message: "Member created successfully", member: member2 });
+      const { stageName, firstName, lastName, birthday, skzoo } = req.body;
+      const newMember = new Member(void 0, stageName, firstName, lastName, birthday, skzoo);
+      const success = await this.memberRepository.insert(newMember);
+      if (success) {
+        return res.status(201).json({ message: "Member created successfully", member: newMember });
       }
-      const member = new Member(codeMember, stageName, firstName, lastName, birthday, skzoo);
-      const ok = await this.memberDao.insert(member);
-      if (!ok) return res.status(500).json({ error: "Failed to create member" });
-      res.status(201).json({ message: "Member created successfully", member });
+      return res.status(500).json({ error: "Failed to create member" });
     } catch (error) {
-      res.status(500).json({ error: "Unable to create member" });
+      console.error("Error creating member:", error);
+      return res.status(500).json({ error: "Unable to create member" });
     }
   };
   update = async (req, res) => {
     try {
       const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid member ID" });
-      const existing = await this.memberDao.findById(id);
-      if (!existing) return res.status(404).json({ message: "Member not found" });
+      if (Number.isNaN(id)) {
+        return res.status(400).json({ error: "Invalid member ID" });
+      }
+      const existingMember = await this.memberRepository.findById(id);
+      if (!existingMember) {
+        return res.status(404).json({ message: "Member not found" });
+      }
       const { stageName, firstName, lastName, birthday, skzoo } = req.body;
-      const updated = new Member(id, stageName, firstName, lastName, birthday, skzoo);
-      const ok = await this.memberDao.update(updated);
-      if (!ok) return res.status(500).json({ error: "Failed to update member" });
-      res.json({ message: "Member updated successfully", member: updated });
-    } catch {
-      res.status(500).json({ error: "Unable to update member" });
+      const updatedMember = new Member(id, stageName, firstName, lastName, birthday, skzoo);
+      const success = await this.memberRepository.update(updatedMember);
+      if (success) {
+        return res.json({ message: "Member updated successfully", member: updatedMember });
+      }
+      return res.status(500).json({ error: "Failed to update member" });
+    } catch (error) {
+      console.error("Error updating member:", error);
+      return res.status(500).json({ error: "Unable to update member" });
     }
   };
   delete = async (req, res) => {
     try {
       const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid member ID" });
-      const ok = await this.memberDao.delete(id);
-      if (!ok) return res.status(404).json({ message: "Member not found" });
-      res.json({ message: "Member deleted successfully" });
-    } catch {
-      res.status(500).json({ error: "Unable to delete member" });
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid member ID" });
+      }
+      const deleted = await this.memberRepository.delete(id);
+      if (deleted) {
+        res.json({ message: "Member deleted successfully" });
+      } else {
+        res.status(404).json({ message: "Member not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting member:", error);
+      res.status(500).json({ error: "[MemberController.delete] Unable to delete member" });
     }
   };
 };
 
 // src/http/routes/members.ts
-function createMemberRouter(memberDao) {
-  const memberController = new MemberController(memberDao);
+function createMemberRouter(memberRepository) {
+  const memberController = new MemberController(memberRepository);
   const router = express.Router();
   router.get("/members", memberController.findAll);
   router.get("/members/:id", memberController.findById);
@@ -721,47 +812,34 @@ import express2 from "express";
 
 // src/http/Controller/PetController.ts
 var PetController = class {
-  constructor(petDao) {
-    this.petDao = petDao;
+  constructor(petRepository) {
+    this.petRepository = petRepository;
   }
   findAll = async (_req, res) => {
     try {
-      const pets = await this.petDao.findAll();
+      const pets = await this.petRepository.findAll();
       res.json(pets);
     } catch {
       res.status(500).json({ error: "Unable to retrieve pets" });
-    }
-  };
-  findById = async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid pet ID" });
-      const pet = await this.petDao.findById(id);
-      if (!pet) return res.status(404).json({ message: "Pet not found" });
-      res.json(pet);
-    } catch {
-      res.status(500).json({ error: "Unable to retrieve pet" });
     }
   };
   findByOwner = async (req, res) => {
     try {
       const ownerId = Number(req.params.ownerId);
       if (Number.isNaN(ownerId)) return res.status(400).json({ error: "Invalid owner ID" });
-      const pets = await this.petDao.findByMember(ownerId);
+      const pets = await this.petRepository.findByOwner(ownerId);
       res.json(pets);
     } catch {
-      res.status(500).json({ error: "Unable to retrieve pets" });
+      res.status(500).json({ error: "Unable to retrieve pets by owner" });
     }
   };
   insert = async (req, res) => {
     try {
-      const { id, name, type, birthday, owner } = req.body;
-      const all = await this.petDao.findAll();
-      const newId = id ?? (all.length ? Math.max(...all.map((p) => p.codePet)) + 1 : 1);
-      const pet = new Pet(newId, name, type, birthday, owner);
-      const ok = await this.petDao.insert(pet);
+      const { name, type, birthday, owner } = req.body;
+      const newPet = new Pet(void 0, name, type, birthday, owner);
+      const ok = await this.petRepository.insert(newPet);
       if (!ok) return res.status(500).json({ error: "Failed to create pet" });
-      res.status(201).json({ message: "Pet created successfully", pet });
+      res.status(201).json({ message: "Pet created successfully", pet: newPet });
     } catch {
       res.status(500).json({ error: "Unable to create pet" });
     }
@@ -770,11 +848,11 @@ var PetController = class {
     try {
       const id = Number(req.params.id);
       if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid pet ID" });
-      const existing = await this.petDao.findById(id);
+      const existing = await this.petRepository.findById(id);
       if (!existing) return res.status(404).json({ message: "Pet not found" });
       const { name, type, birthday, owner } = req.body;
       const updated = new Pet(id, name, type, birthday, owner);
-      const ok = await this.petDao.update(updated);
+      const ok = await this.petRepository.update(updated);
       if (!ok) return res.status(500).json({ error: "Failed to update pet" });
       res.json({ message: "Pet updated successfully", pet: updated });
     } catch {
@@ -785,7 +863,7 @@ var PetController = class {
     try {
       const id = Number(req.params.id);
       if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid pet ID" });
-      const ok = await this.petDao.delete(id);
+      const ok = await this.petRepository.delete(id);
       if (!ok) return res.status(404).json({ message: "Pet not found" });
       res.json({ message: "Pet deleted successfully" });
     } catch {
@@ -795,11 +873,10 @@ var PetController = class {
 };
 
 // src/http/routes/pets.ts
-function createPetRouter(petDao) {
+function createPetRouter(petRepository) {
   const router = express2.Router();
-  const controller = new PetController(petDao);
+  const controller = new PetController(petRepository);
   router.get("/pets", controller.findAll);
-  router.get("/pets/:id", controller.findById);
   router.get("/pets/owner/:ownerId", controller.findByOwner);
   router.post("/pets", controller.insert);
   router.put("/pets/:id", controller.update);
@@ -807,7 +884,7 @@ function createPetRouter(petDao) {
   return router;
 }
 
-// src/http/routes/position.ts
+// src/http/routes/authentification.ts
 import express3 from "express";
 
 // src/middleware/auth.ts
@@ -944,114 +1021,256 @@ var verifyRefreshToken = (token) => {
   }
 };
 
+// src/http/Controller/AuthController.ts
+import bcrypt from "bcrypt";
+var AuthController = class {
+  constructor(users) {
+    this.users = users;
+  }
+  register = async (req, res) => {
+    try {
+      const { username, password, email } = req.body;
+      if (!username || !password || !email) {
+        return res.status(400).json({ error: "Username, password, and email are required" });
+      }
+      const existingUser = await this.users.findByUsername(username);
+      if (existingUser) return res.status(409).json({ error: "Username already exists" });
+      const existingEmail = await this.users.findByEmail(email);
+      if (existingEmail) return res.status(409).json({ error: "Email already exists" });
+      const hashedPassword = await bcrypt.hash(password, config.security.bcryptRounds);
+      const allUsers = await this.users.findAll();
+      const isFirstUser = allUsers.length === 0;
+      const newId = isFirstUser ? 1 : Math.max(...allUsers.map((u) => u.id)) + 1;
+      const userRole = isFirstUser ? "admin" /* ADMIN */ : "user" /* USER */;
+      const newUser = new User(newId, username, hashedPassword, email, userRole);
+      const ok = await this.users.insert(newUser);
+      if (!ok) return res.status(500).json({ error: "Unable to register user" });
+      res.status(201).json({
+        message: "User registered successfully",
+        user: newUser.toSafeObject()
+      });
+    } catch {
+      res.status(500).json({ error: "Unable to register user" });
+    }
+  };
+  login = async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) return res.status(400).json({ error: "Username and password are required" });
+      const user = await this.users.findByUsername(username);
+      if (!user) return res.status(401).json({ error: "Invalid credentials" });
+      const ok = await bcrypt.compare(password, user.password);
+      if (!ok) return res.status(401).json({ error: "Invalid credentials" });
+      const payload = { id: user.id, username: user.username, role: user.role };
+      res.json({
+        message: "Login successful",
+        accessToken: generateToken(payload),
+        refreshToken: generateRefreshToken(payload),
+        user: user.toSafeObject()
+      });
+    } catch {
+      res.status(500).json({ error: "Unable to login" });
+    }
+  };
+  refresh = async (req, res) => {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) return res.status(400).json({ error: "Refresh token is required" });
+      const decoded = verifyRefreshToken(refreshToken);
+      if (!decoded) return res.status(403).json({ error: "Invalid or expired refresh token" });
+      const user = await this.users.findById(decoded.id);
+      if (!user) return res.status(403).json({ error: "User not found" });
+      const payload = { id: user.id, username: user.username, role: user.role };
+      res.json({ accessToken: generateToken(payload) });
+    } catch {
+      res.status(500).json({ error: "Unable to refresh token" });
+    }
+  };
+  me = async (req, res) => {
+    try {
+      if (!req.user) return res.status(401).json({ error: "Not authenticated" });
+      const user = await this.users.findById(req.user.id);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json(user.toSafeObject());
+    } catch {
+      res.status(500).json({ error: "Unable to fetch user information" });
+    }
+  };
+};
+
+// src/http/routes/authentification.ts
+function createAuthRouter(users) {
+  const router = express3.Router();
+  const controller = new AuthController(users);
+  router.post("/register", controller.register);
+  router.post("/login", controller.login);
+  router.post("/refresh", controller.refresh);
+  router.get("/me", authenticateToken, controller.me);
+  return router;
+}
+
+// src/http/routes/user.ts
+import express4 from "express";
+
+// src/http/Controller/UserController.ts
+import bcrypt2 from "bcrypt";
+var UserController = class {
+  constructor(users) {
+    this.users = users;
+  }
+  findAll = async (_req, res) => {
+    try {
+      const users = await this.users.findAll();
+      res.json(users.map((u) => u.toSafeObject()));
+    } catch {
+      res.status(500).json({ error: "Unable to retrieve users" });
+    }
+  };
+  findById = async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
+      const user = await this.users.findById(id);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json(user.toSafeObject());
+    } catch {
+      res.status(500).json({ error: "Unable to retrieve user" });
+    }
+  };
+  update = async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
+      const existing = await this.users.findById(id);
+      if (!existing) return res.status(404).json({ error: "User not found" });
+      const { username, email, password, role } = req.body;
+      if (username && username !== existing.username) {
+        const u = await this.users.findByUsername(username);
+        if (u && u.id !== id) return res.status(409).json({ error: "Username already taken" });
+        existing.username = username;
+      }
+      if (email && email !== existing.email) {
+        const u = await this.users.findByEmail(email);
+        if (u && u.id !== id) return res.status(409).json({ error: "Email already taken" });
+        existing.email = email;
+      }
+      if (password) {
+        existing.password = await bcrypt2.hash(password, config.security.bcryptRounds);
+      }
+      if (role && req.user?.role === "admin" /* ADMIN */) {
+        if (Object.values(UserRole).includes(role)) {
+          existing.role = role;
+        }
+      }
+      const ok = await this.users.update(existing);
+      if (!ok) return res.status(500).json({ error: "Failed to update user" });
+      res.json({ message: "User updated successfully", user: existing.toSafeObject() });
+    } catch {
+      res.status(500).json({ error: "Unable to update user" });
+    }
+  };
+  delete = async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
+      if (req.user?.id === id) return res.status(403).json({ error: "You cannot delete your own account" });
+      const user = await this.users.findById(id);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      const ok = await this.users.delete(id);
+      if (!ok) return res.status(500).json({ error: "Failed to delete user" });
+      res.json({ message: "User deleted successfully" });
+    } catch {
+      res.status(500).json({ error: "Unable to delete user" });
+    }
+  };
+};
+
+// src/http/routes/user.ts
+function createUserRouter(users) {
+  const router = express4.Router();
+  const controller = new UserController(users);
+  router.get("/users", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.findAll);
+  router.get("/users/:id", authenticateToken, authorizeOwnerOrAdmin, controller.findById);
+  router.put("/users/:id", authenticateToken, authorizeOwnerOrAdmin, controller.update);
+  router.delete("/users/:id", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.delete);
+  return router;
+}
+
+// src/http/routes/position.ts
+import express5 from "express";
+
 // src/http/Controller/PositionController.ts
 var PositionController = class {
   constructor(positions, memberPositions) {
     this.positions = positions;
     this.memberPositions = memberPositions;
   }
-  findAll = async (_, res) => {
-    try {
-      res.json(await this.positions.findAll());
-    } catch {
-      res.status(500).json({ error: "Unable to retrieve positions" });
-    }
-  };
+  findAll = async (_, res) => res.json(await this.positions.findAll());
   findById = async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid position ID" });
-      const position = await this.positions.findById(id);
-      if (!position) return res.status(404).json({ error: "Position not found" });
-      res.json(position);
-    } catch {
-      res.status(500).json({ error: "Unable to retrieve position" });
-    }
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid position ID" });
+    const p = await this.positions.findById(id);
+    if (!p) return res.status(404).json({ error: "Position not found" });
+    res.json(p);
   };
   insert = async (req, res) => {
-    try {
-      const { id, name } = req.body;
-      if (!name) return res.status(400).json({ error: "Name is required" });
-      const all = await this.positions.findAll();
-      const newId = id ?? (all.length ? Math.max(...all.map((p) => p.codePosition)) + 1 : 1);
-      const position = new Position(newId, name);
-      const ok = await this.positions.insert(position);
-      if (!ok) return res.status(500).json({ error: "Failed to create position" });
-      res.status(201).json({ message: "Position created successfully", position });
-    } catch {
-      res.status(500).json({ error: "Unable to create position" });
-    }
+    const { id, name } = req.body;
+    if (!name) return res.status(400).json({ error: "Name is required" });
+    const all = await this.positions.findAll();
+    const newId = id ?? (all.length ? Math.max(...all.map((p) => p.codePosition)) + 1 : 1);
+    const ok = await this.positions.insert(new Position(newId, name));
+    if (!ok) return res.status(500).json({ error: "Failed to create position" });
+    res.status(201).json({ message: "Position created successfully" });
   };
   update = async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid position ID" });
-      const existing = await this.positions.findById(id);
-      if (!existing) return res.status(404).json({ error: "Position not found" });
-      const { name } = req.body;
-      const updated = new Position(id, name ?? existing.name);
-      const ok = await this.positions.update(updated);
-      if (!ok) return res.status(500).json({ error: "Failed to update position" });
-      res.json({ message: "Position updated successfully", position: updated });
-    } catch {
-      res.status(500).json({ error: "Unable to update position" });
-    }
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid position ID" });
+    const existing = await this.positions.findById(id);
+    if (!existing) return res.status(404).json({ error: "Position not found" });
+    const { name } = req.body;
+    const updated = new Position(id, name ?? existing.name);
+    const ok = await this.positions.update(updated);
+    if (!ok) return res.status(500).json({ error: "Failed to update position" });
+    res.json({ message: "Position updated successfully", position: updated });
   };
   delete = async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid position ID" });
-      const ok = await this.positions.delete(id);
-      if (!ok) return res.status(404).json({ error: "Position not found" });
-      res.json({ message: "Position deleted successfully" });
-    } catch {
-      res.status(500).json({ error: "Unable to delete position" });
-    }
+    const id = Number(req.params.id);
+    if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid position ID" });
+    const ok = await this.positions.delete(id);
+    if (!ok) return res.status(404).json({ error: "Position not found" });
+    res.json({ message: "Position deleted successfully" });
   };
   addMember = async (req, res) => {
-    try {
-      const positionId = Number(req.params.id);
-      const memberId = Number(req.params.memberId);
-      if (Number.isNaN(positionId) || Number.isNaN(memberId)) {
-        return res.status(400).json({ error: "Invalid position or member ID" });
-      }
-      const ok = await this.memberPositions.add(memberId, positionId);
-      if (!ok) return res.status(500).json({ error: "Failed to add member to position" });
-      res.json({ message: "Member added to position successfully" });
-    } catch {
-      res.status(500).json({ error: "Unable to add member to position" });
+    const positionId = Number(req.params.id);
+    const memberId = Number(req.params.memberId);
+    if (Number.isNaN(positionId) || Number.isNaN(memberId)) {
+      return res.status(400).json({ error: "Invalid position or member ID" });
     }
+    const ok = await this.memberPositions.add(memberId, positionId);
+    if (!ok) return res.status(500).json({ error: "Failed to add member to position" });
+    res.json({ message: "Member added to position successfully" });
   };
   removeMember = async (req, res) => {
-    try {
-      const positionId = Number(req.params.id);
-      const memberId = Number(req.params.memberId);
-      if (Number.isNaN(positionId) || Number.isNaN(memberId)) {
-        return res.status(400).json({ error: "Invalid position or member ID" });
-      }
-      const ok = await this.memberPositions.remove(memberId, positionId);
-      if (!ok) return res.status(404).json({ error: "Member not in this position" });
-      res.json({ message: "Member removed from position successfully" });
-    } catch {
-      res.status(500).json({ error: "Unable to remove member from position" });
+    const positionId = Number(req.params.id);
+    const memberId = Number(req.params.memberId);
+    if (Number.isNaN(positionId) || Number.isNaN(memberId)) {
+      return res.status(400).json({ error: "Invalid position or member ID" });
     }
+    const ok = await this.memberPositions.remove(memberId, positionId);
+    if (!ok) return res.status(404).json({ error: "Member not in this position" });
+    res.json({ message: "Member removed from position successfully" });
   };
   members = async (req, res) => {
-    try {
-      const positionId = Number(req.params.id);
-      if (Number.isNaN(positionId)) return res.status(400).json({ error: "Invalid position ID" });
-      const memberIds = await this.memberPositions.findMembersByPosition(positionId);
-      res.json({ positionId, memberIds });
-    } catch {
-      res.status(500).json({ error: "Unable to retrieve members" });
-    }
+    const positionId = Number(req.params.id);
+    if (Number.isNaN(positionId)) return res.status(400).json({ error: "Invalid position ID" });
+    res.json({ positionId, memberIds: await this.memberPositions.findMembersByPosition(positionId) });
   };
 };
 
 // src/http/routes/position.ts
-function createPositionRouter(positionDao, memberPositionDao) {
-  const router = express3.Router();
-  const controller = new PositionController(positionDao, memberPositionDao);
+function createPositionRouter(positions, memberPositions) {
+  const router = express5.Router();
+  const controller = new PositionController(positions, memberPositions);
   router.get("/positions", authenticateToken, controller.findAll);
   router.get("/positions/:id", authenticateToken, controller.findById);
   router.post("/positions", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.insert);
@@ -1074,7 +1293,7 @@ function createPositionRouter(positionDao, memberPositionDao) {
 }
 
 // src/http/routes/sub_unit.ts
-import express4 from "express";
+import express6 from "express";
 
 // src/http/Controller/SubUnitController.ts
 var SubUnitController = class {
@@ -1100,13 +1319,13 @@ var SubUnitController = class {
       res.status(500).json({ error: "Unable to retrieve sub-unit" });
     }
   };
-  insert = async (req, res) => {
+  create = async (req, res) => {
     try {
       const { id, name } = req.body;
       if (!name) return res.status(400).json({ error: "Name is required" });
-      const all = await this.subUnits.findAll();
-      const newId = id ?? (all.length ? Math.max(...all.map((s) => s.codeSubUnit)) + 1 : 1);
-      const subUnit = new SubUnit(newId, name);
+      const existing = await this.subUnits.findAll();
+      const subUnitId = id ?? (existing.length > 0 ? Math.max(...existing.map((s) => s.codeSubUnit)) + 1 : 1);
+      const subUnit = new SubUnit(subUnitId, name);
       const ok = await this.subUnits.insert(subUnit);
       if (!ok) return res.status(500).json({ error: "Failed to create sub-unit" });
       res.status(201).json({ message: "Sub-unit created successfully", subUnit });
@@ -1181,12 +1400,12 @@ var SubUnitController = class {
 };
 
 // src/http/routes/sub_unit.ts
-function createSubUnitRouter(subUnitDao, memberSubUnitDao) {
-  const router = express4.Router();
-  const controller = new SubUnitController(subUnitDao, memberSubUnitDao);
+function createSubUnitRouter(subUnits, memberSubUnits) {
+  const router = express6.Router();
+  const controller = new SubUnitController(subUnits, memberSubUnits);
   router.get("/sub-units", authenticateToken, controller.findAll);
   router.get("/sub-units/:id", authenticateToken, controller.findById);
-  router.post("/sub-units", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.insert);
+  router.post("/sub-units", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.create);
   router.put("/sub-units/:id", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.update);
   router.delete("/sub-units/:id", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.delete);
   router.post(
@@ -1205,197 +1424,110 @@ function createSubUnitRouter(subUnitDao, memberSubUnitDao) {
   return router;
 }
 
-// src/http/routes/authentification.ts
-import express5 from "express";
-
-// src/http/Controller/AuthController.ts
-import bcrypt from "bcrypt";
-var AuthController = class {
-  constructor(users) {
-    this.users = users;
+// src/persistance/DAO/Sqlite/SqliteMemberSubUnitDao.ts
+var SqliteMemberSubUnitDao = class {
+  constructor(db) {
+    this.db = db;
   }
-  register = async (req, res) => {
-    try {
-      const { username, password, email } = req.body;
-      if (!username || !password || !email) {
-        return res.status(400).json({ error: "Username, password, and email are required" });
-      }
-      const existingUser = await this.users.findByUsername(username);
-      if (existingUser) return res.status(409).json({ error: "Username already exists" });
-      const existingEmail = await this.users.findByEmail(email);
-      if (existingEmail) return res.status(409).json({ error: "Email already exists" });
-      const hashedPassword = await bcrypt.hash(password, config.security.bcryptRounds);
-      const allUsers = await this.users.findAll();
-      const isFirstUser = allUsers.length === 0;
-      const newId = isFirstUser ? 1 : Math.max(...allUsers.map((u) => u.id)) + 1;
-      const role = isFirstUser ? "admin" /* ADMIN */ : "user" /* USER */;
-      const newUser = new User(newId, username, hashedPassword, email, role);
-      const ok = await this.users.insert(newUser);
-      if (!ok) return res.status(500).json({ error: "Unable to register user" });
-      res.status(201).json({ message: "User registered successfully", user: newUser.toSafeObject() });
-    } catch {
-      res.status(500).json({ error: "Unable to register user" });
-    }
-  };
-  login = async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password are required" });
-      }
-      const user = await this.users.findByUsername(username);
-      if (!user) return res.status(401).json({ error: "Invalid credentials" });
-      const ok = await bcrypt.compare(password, user.password);
-      if (!ok) return res.status(401).json({ error: "Invalid credentials" });
-      const payload = { id: user.id, username: user.username, role: user.role };
-      res.json({
-        message: "Login successful",
-        accessToken: generateToken(payload),
-        refreshToken: generateRefreshToken(payload),
-        user: user.toSafeObject()
-      });
-    } catch {
-      res.status(500).json({ error: "Unable to login" });
-    }
-  };
-  refresh = async (req, res) => {
-    try {
-      const { refreshToken } = req.body;
-      if (!refreshToken) return res.status(400).json({ error: "Refresh token is required" });
-      const decoded = verifyRefreshToken(refreshToken);
-      if (!decoded) return res.status(403).json({ error: "Invalid or expired refresh token" });
-      const user = await this.users.findById(decoded.id);
-      if (!user) return res.status(403).json({ error: "User not found" });
-      const payload = { id: user.id, username: user.username, role: user.role };
-      res.json({ accessToken: generateToken(payload) });
-    } catch {
-      res.status(500).json({ error: "Unable to refresh token" });
-    }
-  };
-  me = async (req, res) => {
-    try {
-      if (!req.user) return res.status(401).json({ error: "Not authenticated" });
-      const user = await this.users.findById(req.user.id);
-      if (!user) return res.status(404).json({ error: "User not found" });
-      res.json(user.toSafeObject());
-    } catch {
-      res.status(500).json({ error: "Unable to fetch user information" });
-    }
-  };
+  async add(memberId, subUnitId) {
+    const r = await this.db.run(
+      `INSERT OR IGNORE INTO Member_SubUnit (memberId, subUnitId) VALUES (?, ?);`,
+      memberId,
+      subUnitId
+    );
+    return (r.changes ?? 0) > 0;
+  }
+  async remove(memberId, subUnitId) {
+    const r = await this.db.run(
+      `DELETE FROM Member_SubUnit WHERE memberId = ? AND subUnitId = ?;`,
+      memberId,
+      subUnitId
+    );
+    return (r.changes ?? 0) > 0;
+  }
+  async findSubUnitsByMember(memberId) {
+    const rows = await this.db.all(
+      `SELECT s.* FROM SubUnit s
+       INNER JOIN Member_SubUnit ms ON ms.subUnitId = s.codeSubUnit
+       WHERE ms.memberId = ?;`,
+      memberId
+    );
+    return rows.map((r) => new SubUnit(r.codeSubUnit, r.name));
+  }
+  async findMembersBySubUnit(subUnitId) {
+    const rows = await this.db.all(
+      `SELECT memberId FROM Member_SubUnit WHERE subUnitId = ?;`,
+      subUnitId
+    );
+    return rows.map((r) => r.memberId);
+  }
 };
 
-// src/http/routes/authentification.ts
-function createAuthRouter(userDao) {
-  const router = express5.Router();
-  const controller = new AuthController(userDao);
-  router.post("/auth/register", controller.register);
-  router.post("/auth/login", controller.login);
-  router.post("/auth/refresh", controller.refresh);
-  router.get("/auth/me", authenticateToken, controller.me);
-  return router;
-}
-
-// src/http/routes/user.ts
-import express6 from "express";
-
-// src/http/Controller/UserController.ts
-import bcrypt2 from "bcrypt";
-var UserController = class {
-  constructor(users) {
-    this.users = users;
+// src/persistance/DAO/Sqlite/SqliteMemberPositionDao.ts
+var SqliteMemberPositionDao = class {
+  constructor(db) {
+    this.db = db;
   }
-  findAll = async (_, res) => {
-    try {
-      const all = await this.users.findAll();
-      res.json(all.map((u) => u.toSafeObject()));
-    } catch {
-      res.status(500).json({ error: "Unable to retrieve users" });
-    }
-  };
-  findById = async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
-      const user = await this.users.findById(id);
-      if (!user) return res.status(404).json({ error: "User not found" });
-      res.json(user.toSafeObject());
-    } catch {
-      res.status(500).json({ error: "Unable to retrieve user" });
-    }
-  };
-  delete = async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
-      const ok = await this.users.delete(id);
-      if (!ok) return res.status(404).json({ error: "User not found" });
-      res.json({ message: "User deleted successfully" });
-    } catch {
-      res.status(500).json({ error: "Unable to delete user" });
-    }
-  };
-  update = async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-      if (Number.isNaN(id)) return res.status(400).json({ error: "Invalid user ID" });
-      const existing = await this.users.findById(id);
-      if (!existing) return res.status(404).json({ error: "User not found" });
-      const { username, email, password, role } = req.body;
-      if (username && username !== existing.username) {
-        const u = await this.users.findByUsername(username);
-        if (u && u.id !== id) return res.status(409).json({ error: "Username already taken" });
-        existing.username = username;
-      }
-      if (email && email !== existing.email) {
-        const u = await this.users.findByEmail(email);
-        if (u && u.id !== id) return res.status(409).json({ error: "Email already taken" });
-        existing.email = email;
-      }
-      if (password) {
-        existing.password = await bcrypt2.hash(password, config.security.bcryptRounds);
-      }
-      if (role && req.user?.role === "admin" /* ADMIN */ && Object.values(UserRole).includes(role)) {
-        existing.role = role;
-      }
-      const ok = await this.users.update(existing);
-      if (!ok) return res.status(500).json({ error: "Failed to update user" });
-      res.json({ message: "User updated successfully", user: existing.toSafeObject() });
-    } catch {
-      res.status(500).json({ error: "Unable to update user" });
-    }
-  };
+  async add(memberId, positionId) {
+    const r = await this.db.run(
+      `INSERT OR IGNORE INTO Member_Position (memberId, positionId) VALUES (?, ?);`,
+      memberId,
+      positionId
+    );
+    return (r.changes ?? 0) > 0;
+  }
+  async remove(memberId, positionId) {
+    const r = await this.db.run(
+      `DELETE FROM Member_Position WHERE memberId = ? AND positionId = ?;`,
+      memberId,
+      positionId
+    );
+    return (r.changes ?? 0) > 0;
+  }
+  async findPositionsByMember(memberId) {
+    const rows = await this.db.all(
+      `SELECT p.* FROM Position p
+       INNER JOIN Member_Position mp ON mp.positionId = p.codePosition
+       WHERE mp.memberId = ?;`,
+      memberId
+    );
+    return rows.map((r) => new Position(r.codePosition, r.name));
+  }
+  async findMembersByPosition(positionId) {
+    const rows = await this.db.all(
+      `SELECT memberId FROM Member_Position WHERE positionId = ?;`,
+      positionId
+    );
+    return rows.map((r) => r.memberId);
+  }
 };
-
-// src/http/routes/user.ts
-function createUserRouter(userDao) {
-  const router = express6.Router();
-  const controller = new UserController(userDao);
-  router.get("/users", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.findAll);
-  router.get("/users/:id", authenticateToken, authorizeOwnerOrAdmin, controller.findById);
-  router.put("/users/:id", authenticateToken, authorizeOwnerOrAdmin, controller.update);
-  router.delete("/users/:id", authenticateToken, authorizeRoles("admin" /* ADMIN */), controller.delete);
-  return router;
-}
 
 // src/index.ts
 var port = 3e3;
 async function main() {
   const db = await initDb();
-  const sqliteMemberDao = new SqliteMemberDao(db);
-  const sqlitePetDao = new SqlitePetDao(db);
-  const sqlitePositionDao = new SqlitePositionDao(db);
-  const sqliteSubUnitDao = new SqliteSubUnitDao(db);
-  const sqliteUserDao = new SqliteUserDao(db);
-  const sqliteMemberPositionDao = new SqliteMemberPositionDao(db);
-  const sqliteMemberSubUnitDao = new SqliteMemberSubUnitDao(db);
+  const memberDao = new SqliteMemberDao(db);
+  const petDao = new SqlitePetDao(db);
+  const userDao = new SqliteUserDao(db);
+  const positionDao = new SqlitePositionDao(db);
+  const subUnitDao = new SqliteSubUnitDao(db);
+  const memberPositionDao = new SqliteMemberPositionDao(db);
+  const memberSubUnitDao = new SqliteMemberSubUnitDao(db);
+  const members = new MemberRepositoryFromDao(memberDao);
+  const pets = new PetRepositoryFromDao(petDao);
+  const users = new UserRepositoryFromDao(userDao);
+  const positions = new PositionRepositoryFromDao(positionDao);
+  const subUnits = new SubUnitRepositoryFromDao(subUnitDao);
+  const memberPositions = new MemberPositionRepositoryFromDao(memberPositionDao);
+  const memberSubUnits = new MemberSubUnitRepositoryFromDao(memberSubUnitDao);
   const app = express7();
   app.use(express7.json());
-  app.use("/api", createMemberRouter(sqliteMemberDao));
-  app.use("/api", createPetRouter(sqlitePetDao));
-  app.use("/api", createAuthRouter(sqliteUserDao));
-  app.use("/api", createUserRouter(sqliteUserDao));
-  app.use("/api", createPositionRouter(sqlitePositionDao, sqliteMemberPositionDao));
-  app.use("/api", createSubUnitRouter(sqliteSubUnitDao, sqliteMemberSubUnitDao));
+  app.use("/api", createMemberRouter(members));
+  app.use("/api", createPetRouter(pets));
+  app.use("/api/auth", createAuthRouter(users));
+  app.use("/api", createUserRouter(users));
+  app.use("/api", createPositionRouter(positions, memberPositions));
+  app.use("/api", createSubUnitRouter(subUnits, memberSubUnits));
   app.listen(port, () => console.log(`Server running on port ${port}`));
 }
 main().catch((err) => {

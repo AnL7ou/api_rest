@@ -1,12 +1,12 @@
 import express from "express";
-import type { UserDao } from "../../persistance/DAO/UserDao.js";
+import type { UserRepository } from "../../persistance/Repository/UserRepository.js";
 import { authenticateToken, authorizeOwnerOrAdmin, authorizeRoles } from "../../middleware/auth.js";
 import { UserRole } from "../../persistance/Entity/User.js";
 import { UserController } from "../Controller/UserController.js";
 
-export function createUserRouter(userDao: UserDao) {
+export function createUserRouter(users: UserRepository) {
   const router = express.Router();
-  const controller = new UserController(userDao);
+  const controller = new UserController(users);
 
   router.get("/users", authenticateToken, authorizeRoles(UserRole.ADMIN), controller.findAll);
   router.get("/users/:id", authenticateToken, authorizeOwnerOrAdmin, controller.findById);

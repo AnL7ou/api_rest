@@ -41,6 +41,17 @@ export async function initDb(): Promise<SqliteDb> {
   `);
 
   await db.exec(`
+    CREATE TABLE IF NOT EXISTS User (
+      id INTEGER PRIMARY KEY NOT NULL,
+      username TEXT UNIQUE NOT NULL,
+      password TEXT NOT NULL,
+      email TEXT UNIQUE NOT NULL,
+      role TEXT NOT NULL,
+      createdAt TEXT NOT NULL
+    );
+  `);
+
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS Position (
       codePosition INTEGER PRIMARY KEY NOT NULL,
       name TEXT NOT NULL
@@ -55,23 +66,12 @@ export async function initDb(): Promise<SqliteDb> {
   `);
 
   await db.exec(`
-    CREATE TABLE IF NOT EXISTS User (
-      id INTEGER PRIMARY KEY NOT NULL,
-      username TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      role TEXT NOT NULL,
-      createdAt TEXT NOT NULL DEFAULT (datetime('now'))
-    );
-  `);
-
-  await db.exec(`
     CREATE TABLE IF NOT EXISTS Member_Position (
       memberId INTEGER NOT NULL,
       positionId INTEGER NOT NULL,
       PRIMARY KEY (memberId, positionId),
-      FOREIGN KEY (memberId) REFERENCES Member(codeMember) ON DELETE CASCADE,
-      FOREIGN KEY (positionId) REFERENCES Position(codePosition) ON DELETE CASCADE
+      FOREIGN KEY (memberId) REFERENCES Member(codeMember),
+      FOREIGN KEY (positionId) REFERENCES Position(codePosition)
     );
   `);
 
@@ -80,8 +80,8 @@ export async function initDb(): Promise<SqliteDb> {
       memberId INTEGER NOT NULL,
       subUnitId INTEGER NOT NULL,
       PRIMARY KEY (memberId, subUnitId),
-      FOREIGN KEY (memberId) REFERENCES Member(codeMember) ON DELETE CASCADE,
-      FOREIGN KEY (subUnitId) REFERENCES SubUnit(codeSubUnit) ON DELETE CASCADE
+      FOREIGN KEY (memberId) REFERENCES Member(codeMember),
+      FOREIGN KEY (subUnitId) REFERENCES SubUnit(codeSubUnit)
     );
   `);
 
@@ -108,7 +108,7 @@ export async function initDb(): Promise<SqliteDb> {
       (6, 'Bbama', 'Dog (Bichon Frise)', '09-01-2015', 5);
   `);
 
-  // Minimal seed for Position/SubUnit (optional)
+  // Optional idempotent seed for Position/SubUnit (safe to remove)
   await db.exec(`
     INSERT OR IGNORE INTO Position (codePosition, name) VALUES
       (1, 'Leader'),
@@ -120,8 +120,8 @@ export async function initDb(): Promise<SqliteDb> {
   await db.exec(`
     INSERT OR IGNORE INTO SubUnit (codeSubUnit, name) VALUES
       (1, '3RACHA'),
-      (2, 'Danceracha'),
-      (3, 'Vocalracha');
+      (2, 'DanceRACHA'),
+      (3, 'VocalRACHA');
   `);
 
   return db;
